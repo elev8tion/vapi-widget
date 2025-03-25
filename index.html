@@ -40,6 +40,24 @@
     </div>
     <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
     <script>
+        // Load configuration securely
+        async function loadConfig() {
+            try {
+                const response = await fetch('/.netlify/functions/config');
+                if (!response.ok) {
+                    throw new Error('Failed to load configuration');
+                }
+                const configScript = await response.text();
+                const scriptElement = document.createElement('script');
+                scriptElement.textContent = configScript;
+                document.head.appendChild(scriptElement);
+                return true;
+            } catch (error) {
+                showError('Failed to load configuration: ' + error.message);
+                return false;
+            }
+        }
+
         // Function to safely get environment variables
         function getEnvVar(name) {
             return window.ENV ? window.ENV[name] : '';
@@ -59,7 +77,13 @@
         }
 
         // Function to initialize Vapi
-        function initializeVapi() {
+        async function initializeVapi() {
+            // Load configuration first
+            const configLoaded = await loadConfig();
+            if (!configLoaded) {
+                return;
+            }
+
             const apiKey = getEnvVar('VAPI_PUBLIC_KEY');
             const assistantId = getEnvVar('VAPI_ASSISTANT_ID');
 
