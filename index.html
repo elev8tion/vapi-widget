@@ -2,7 +2,9 @@
 <html>
 <head>
     <title>Vapi Assistant</title>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://api.vapi.ai https://unpkg.com; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://unpkg.com data: blob:;">
     <style>
         body {
             margin: 0;
@@ -16,62 +18,124 @@
         #vapi-widget {
             width: 100%;
             height: 100%;
+            position: relative;
+        }
+        .error-message {
+            display: none;
+            color: red;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
-    <div id="vapi-widget"></div>
+    <div id="vapi-widget">
+        <div id="error-message" class="error-message"></div>
+    </div>
     <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
     <script>
-        window.addEventListener('load', function() {
-            const vapiInstance = window.vapiSDK.run({
-                apiKey: "4758f6d9-4c64-44a6-94c6-585a65b34ce1",
-                assistant: "8893bcf9-1f57-4e99-90f3-719ba96af7f8",
-                element: "#vapi-widget",
-                config: {
-                    position: "bottom-right",
-                    offset: "20px",
-                    width: "60px",
-                    height: "60px",
-                    idle: {
-                        color: 'rgb(93, 254, 202)',
-                        type: "round",
-                        icon: 'https://unpkg.com/lucide-static@0.321.0/icons/phone.svg',
-                    },
-                    loading: {
-                        color: 'rgb(93, 124, 202)',
-                        type: "round",
-                        icon: 'https://unpkg.com/lucide-static@0.321.0/icons/loader-2.svg',
-                    },
-                    active: {
-                        color: 'rgb(255, 0, 0)',
-                        type: "round",
-                        icon: 'https://unpkg.com/lucide-static@0.321.0/icons/phone-off.svg',
+        // Function to safely get environment variables
+        function getEnvVar(name) {
+            return window.ENV ? window.ENV[name] : '';
+        }
+
+        // Function to show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+            console.error(message);
+        }
+
+        // Function to initialize Vapi
+        function initializeVapi() {
+            const apiKey = getEnvVar('VAPI_PUBLIC_KEY');
+            const assistantId = getEnvVar('VAPI_ASSISTANT_ID');
+
+            if (!apiKey || !assistantId) {
+                showError('Configuration error: Missing API keys');
+                return;
+            }
+
+            try {
+                const vapiInstance = window.vapiSDK.run({
+                    apiKey: apiKey,
+                    assistant: assistantId,
+                    element: "#vapi-widget",
+                    config: {
+                        position: "bottom-right",
+                        offset: "20px",
+                        width: "60px",
+                        height: "60px",
+                        idle: {
+                            color: 'rgb(93, 254, 202)',
+                            type: "round",
+                            icon: 'https://unpkg.com/lucide-static@0.321.0/icons/phone.svg',
+                        },
+                        loading: {
+                            color: 'rgb(93, 124, 202)',
+                            type: "round",
+                            icon: 'https://unpkg.com/lucide-static@0.321.0/icons/loader-2.svg',
+                        },
+                        active: {
+                            color: 'rgb(255, 0, 0)',
+                            type: "round",
+                            icon: 'https://unpkg.com/lucide-static@0.321.0/icons/phone-off.svg',
+                        }
                     }
-                }
-            });
+                });
 
-            // Add event listeners for Flutter communication
-            vapiInstance.on('call-start', () => {
-                window.flutter_inappwebview?.callHandler('onCallStart');
-                console.log('Call started');
-            });
+                // Add event listeners for Flutter communication with error handling
+                vapiInstance.on('call-start', () => {
+                    try {
+                        window.flutter_inappwebview?.callHandler('onCallStart');
+                        console.log('Call started');
+                    } catch (error) {
+                        showError('Error during call start');
+                    }
+                });
 
-            vapiInstance.on('call-end', () => {
-                window.flutter_inappwebview?.callHandler('onCallEnd');
-                console.log('Call ended');
-            });
+                vapiInstance.on('call-end', () => {
+                    try {
+                        window.flutter_inappwebview?.callHandler('onCallEnd');
+                        console.log('Call ended');
+                    } catch (error) {
+                        showError('Error during call end');
+                    }
+                });
 
-            vapiInstance.on('message', (message) => {
-                window.flutter_inappwebview?.callHandler('onMessage', message);
-                console.log('Message received:', message);
-            });
+                vapiInstance.on('message', (message) => {
+                    try {
+                        window.flutter_inappwebview?.callHandler('onMessage', message);
+                        console.log('Message received:', message);
+                    } catch (error) {
+                        showError('Error processing message');
+                    }
+                });
 
-            vapiInstance.on('error', (error) => {
-                window.flutter_inappwebview?.callHandler('onError', error);
-                console.error('Vapi Error:', error);
-            });
-        });
+                vapiInstance.on('error', (error) => {
+                    window.flutter_inappwebview?.callHandler('onError', error);
+                    showError('Vapi Error: ' + (error.message || 'Unknown error'));
+                });
+
+            } catch (error) {
+                showError('Failed to initialize Vapi: ' + error.message);
+            }
+        }
+
+        // Initialize when the page loads
+        window.addEventListener('load', initializeVapi);
     </script>
 </body>
 </html> 
