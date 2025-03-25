@@ -9,6 +9,13 @@
             padding: 0;
             height: 100vh;
             background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #vapi-widget {
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -47,7 +54,24 @@
             // Add event listeners for Flutter communication
             vapiInstance.on('call-start', () => {
                 window.flutter_inappwebview?.callHandler('onCallStart');
+                console.log('Call started');
             });
 
             vapiInstance.on('call-end', () => {
-                window.flutter_inappwebview?.callHandler('onCallEn
+                window.flutter_inappwebview?.callHandler('onCallEnd');
+                console.log('Call ended');
+            });
+
+            vapiInstance.on('message', (message) => {
+                window.flutter_inappwebview?.callHandler('onMessage', message);
+                console.log('Message received:', message);
+            });
+
+            vapiInstance.on('error', (error) => {
+                window.flutter_inappwebview?.callHandler('onError', error);
+                console.error('Vapi Error:', error);
+            });
+        });
+    </script>
+</body>
+</html> 
