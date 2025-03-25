@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vapi Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="vapi-widget"></div>
+    <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
+    <script>
+        window.addEventListener('load', function() {
+            const vapiInstance = window.vapiSDK.run({
+                apiKey: "4758f6d9-4c64-44a6-94c6-585a65b34ce1",
+                assistant: "8893bcf9-1f57-4e99-90f3-719ba96af7f8",
+                element: "#vapi-widget",
+                config: {
+                    position: "bottom-right",
+                    offset: "20px",
+                    width: "60px",
+                    height: "60px",
+                    idle: {
+                        color: 'rgb(93, 254, 202)',
+                        type: "round",
+                        icon: 'https://unpkg.com/lucide-static@0.321.0/icons/phone.svg',
+                    },
+                    loading: {
+                        color: 'rgb(93, 124, 202)',
+                        type: "round",
+                        icon: 'https://unpkg.com/lucide-static@0.321.0/icons/loader-2.svg',
+                    },
+                    active: {
+                        color: 'rgb(255, 0, 0)',
+                        type: "round",
+                        icon: 'https://unpkg.com/lucide-static@0.321.0/icons/phone-off.svg',
+                    }
+                }
+            });
+
+            // Add event listeners for Flutter communication
+            vapiInstance.on('call-start', () => {
+                window.flutter_inappwebview?.callHandler('onCallStart');
+            });
+
+            vapiInstance.on('call-end', () => {
+                window.flutter_inappwebview?.callHandler('onCallEn
